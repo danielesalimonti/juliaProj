@@ -74,11 +74,8 @@ for i in 1:dim, j in 1:dim
     global cont1 = cont1 + 1
     if x[cont1] > 0.5
         matrice[i,j] = true
-    else
-        matrice[i,j] = false
     end
 end
-fill!(matrice, false)
 
 dmatrix = distribute(matrice)
 
