@@ -10,7 +10,7 @@ function contaCelleVive(matrice::Matrix{Bool},i,j, dim)
     a = 0
     b = 0
 
-    println("controllando cella $i, $j")
+    #println("controllando cella $i, $j")
     if (i-1)%dim < 0
         a = (i-1)%dim + dim
         if (a == 0) a = dim-1 end
@@ -26,7 +26,7 @@ function contaCelleVive(matrice::Matrix{Bool},i,j, dim)
         b = (j-1)%dim
         if (b == 0) b = dim-1 end
     end
-    println("intorno $a, $b $(matrice[a,b]) ")
+    #println("intorno $a, $b $(matrice[a,b]) ")
     if matrice[a,b]
         cont = cont+1
 
@@ -35,7 +35,7 @@ function contaCelleVive(matrice::Matrix{Bool},i,j, dim)
     for w in 1:2
         b = (b+1)%dim
         if (b == 0) b = 1 end
-        println("intorno $a, $b $(matrice[a,b]) ")
+        #println("intorno $a, $b $(matrice[a,b]) ")
         if matrice[a,b]
             cont = cont+1
         end
@@ -45,7 +45,7 @@ function contaCelleVive(matrice::Matrix{Bool},i,j, dim)
         a = (a+1)%dim
 
         if (a == 0) a = 1 end
-        println("intorno $a, $b $(matrice[a,b]) ")
+        #println("intorno $a, $b $(matrice[a,b]) ")
         if matrice[a,b]
             cont = cont+1
         end
@@ -62,7 +62,7 @@ function contaCelleVive(matrice::Matrix{Bool},i,j, dim)
         if matrice[a,b]
             cont = cont+1
         end
-        println("intorno $a, $b $(matrice[a,b]) ")
+        #println("intorno $a, $b $(matrice[a,b]) ")
     end
 
     if (a-1)%dim < 0
@@ -72,7 +72,7 @@ function contaCelleVive(matrice::Matrix{Bool},i,j, dim)
         a = (a-1)%dim
         if (a == 0) a = dim-1 end
     end
-    println("intorno $a, $b $(matrice[a,b]) ")
+    #println("intorno $a, $b $(matrice[a,b]) ")
     if matrice[a,b]
         cont = cont+1
     end
@@ -145,15 +145,17 @@ end
 #inizio programma
 dim = 30
 dimWin = dim*30
-
+#=
 win = GtkWindow("GameOfLife", dimWin, dimWin)
 hbox = Box(:h)
 set_gtk_property!(hbox, :homogeneous, true)
 push!(win, hbox)
 canv = Canvas()
 push!(hbox, canv)
+=#
 cont = 0
-gen = 100
+gen = 10000
+
 matrice = Matrix{Bool}(undef, dim, dim)
 tmp = Matrix{Bool}(undef, dim, dim)
 
@@ -173,34 +175,33 @@ for i in 1:dim, j in 1:dim
     else
         matrice[i,j] = false
     end
-
 end
 
 
-@async begin
+#@async begin
     for _ in 1:gen
         #println("qui")
         for i in 1:dim, j in 1:dim
 
             celleVive = contaCelleVive(matrice, i, j, dim)
-            println("cella $i, $j ha celle vive $celleVive")
+            #println("cella $i, $j ha celle vive $celleVive")
 
             if celleVive < 2 || celleVive > 3
                 tmp[i,j] = false
-                println("morte")
+                #println("morte")
             elseif celleVive == 3
                 tmp[i,j] = true
-                println("Vive")
+                #println("Vive")
             else
                 tmp[i,j] = matrice[i,j]
-                println("$(matrice[i,j]) come prima")
+                #println("$(matrice[i,j]) come prima")
             end
 
         end
 
         scambia(matrice, tmp, dim)
 
-        displays(dim, matrice, canv)
+        #displays(dim, matrice, canv)
     end
-end
-showall(win)
+#end
+#showall(win)
