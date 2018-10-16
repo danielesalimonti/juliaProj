@@ -1,7 +1,6 @@
 using Random
 
 
-
 function life_rule(old, matrix::Array)
     m, n = size(old)
     newA = similar(old, m-2, n-2)
@@ -17,7 +16,7 @@ function life_rule(old, matrix::Array)
     end
     #println("$(size(newA))")
     matrix[1:size(matrix)[1], 1:size(matrix)[2]] = newA[1:end, 1:end]
-
+    newA = 0
 end
 
 function life_step(matrix::Array)
@@ -40,6 +39,7 @@ function life_step(matrix::Array)
     #println(i)
     #stampaMatrice(old)
     life_rule(old, matrix)
+    old = 0
 end
 
 
@@ -74,19 +74,22 @@ function gameOfLife(matrix::Array, gen::Int)
 end
 
 #inizio programma
-dim = 50
+dim = 20000
 matrix = Array{Bool}(undef, dim, dim)
-cont1 = 0
+
 Random.seed!(1234)
 x = rand(dim*dim)
 fill!(matrix, false)
-
-for i in 1:dim, j in 1:dim
-    global cont1 = cont1 + 1
-    if x[cont1] > 0.5
-        matrix[i,j] = true
+let
+    cont1 = 0
+    for i in 1:dim, j in 1:dim
+        cont1 = cont1 + 1
+        if x[cont1] > 0.5
+            matrix[i,j] = true
+        end
     end
 end
+x = 0
 #=
 matrix[1,20] = true
 matrix[2,20] = true
@@ -97,5 +100,9 @@ matrix[3,20] = true
 #println(ranges)
 
 
-t = @elapsed gameOfLife(matrix, 100000)
+t = @elapsed gameOfLife(matrix, 10)
 println(t)
+
+matrix = 0
+GC.gc()
+#println(varinfo())

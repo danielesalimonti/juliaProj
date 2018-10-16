@@ -1,7 +1,7 @@
 using Distributed, SharedArrays, Random
 @everywhere using SharedArrays
-if (nworkers() != 4)
-    addprocs(4)
+if (nworkers() != 7)
+    addprocs(7)
 end
 
 
@@ -37,13 +37,13 @@ end
         end
     end
     #println("$(size(newA))")
-    @spawnat 1 array[1:size(array)[1], range1:range2] = newA[1:end, 1:end]
+    array[1:size(array)[1], range1:range2] = newA[1:end, 1:end]
 
 end
 
 function life_step(matrix::SharedArray, ranges::Array)
 
-    for i in 2:nworkers()+1
+    @sync for i in 2:nworkers()+1
         @spawnat i begin
             row::Int = size(matrix)[1]+2
             col::Int = (ranges[i]-ranges[i-1])+2
@@ -68,6 +68,7 @@ function life_step(matrix::SharedArray, ranges::Array)
             #println(i)
             #stampaMatrice(old)
             life_rule(old, ranges[i-1]+1, ranges[i], matrix)
+            old = 0
         end
     end
 end
@@ -104,7 +105,7 @@ function gameOfLife(matrix::SharedArray, ranges::Array, gen::Int)
 end
 
 #inizio programma
-dim = 50
+dim = 20000
 matrix = SharedArray{Bool}(dim, dim)
 #tmp = SharedArray{Bool}(dim, dim)
 cont1 = 0
@@ -118,6 +119,7 @@ for i in 1:dim, j in 1:dim
         matrix[i,j] = true
     end
 end
+x = 0
 #=
 matrix[1,20] = true
 matrix[2,20] = true
@@ -134,5 +136,10 @@ ranges = assignRange(dim)
 #println(ranges)
 
 
-t = @elapsed gameOfLife(matrix, ranges, 100000)
+t = @elapsed gameOfLife(matrix, ranges, 10)
 println(t)
+
+matrix = 0
+GC.gc()
+
+#println(varinfo())
