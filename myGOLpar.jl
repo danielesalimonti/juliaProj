@@ -108,15 +108,17 @@ end
 dim = 20000
 matrix = SharedArray{Bool}(dim, dim)
 #tmp = SharedArray{Bool}(dim, dim)
-cont1 = 0
+
 Random.seed!(1234)
 x = rand(dim*dim)
 fill!(matrix, false)
-
-for i in 1:dim, j in 1:dim
-    global cont1 = cont1 + 1
-    if x[cont1] > 0.5
-        matrix[i,j] = true
+let
+    cont1 = 0
+    for i in 1:dim, j in 1:dim
+        cont1 = cont1 + 1
+        if x[cont1] > 0.5
+            matrix[i,j] = true
+        end
     end
 end
 x = 0
