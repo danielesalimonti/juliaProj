@@ -1,4 +1,57 @@
+using Gtk, Gtk.ShortNames, Graphics
+using Distributed
 using DelimitedFiles
+
+#addprocs(2)
+
+function displays(matrice::Matrix{Float64}, canv)
+    #println("qui1")
+    #dimWin = size(matrice)[2]*2
+
+    @guarded draw(canv) do widget
+        #println("qui2")
+        ctx = getgc(canv)
+        w, h = width(canv), height(canv)
+        #println("qui3")
+        offsetW = w
+        offsetH = h
+        rectangle(ctx, 0, 0, w, h)
+        set_source_rgb(ctx, 0, 0, 0)
+        #set_source_rgb(ctx, rand(1)[1], rand(1)[1], rand(1)[1])
+        #set_source_rgb(ctx, 1, 1, 1)
+        fill(ctx)
+        #=for i in 0:2:dimWin
+
+            rectangle(ctx, i, 0, 1, dimWin)
+            set_source_rgb(ctx, 0, 0, 0)
+            #set_source_rgb(ctx, 0, 0, 0)
+            fill(ctx)
+
+            rectangle(ctx, 0, i, dimWin, 1)
+            set_source_rgb(ctx, 0, 0, 0)
+            #set_source_rgb(ctx, 0, 0, 0)
+            fill(ctx)
+
+        end=#
+        for i in 1:size(matrice)[1], j in 1:size(matrice)[2]
+
+                 rectangle(ctx, ((j*w)/size(matrice)[2]), ((i*h)/size(matrice)[1]), 2, 2)
+                 #println("i : $i, j: $j")
+                 if (matrice[i,j]>0)
+                     set_source_rgb(ctx, 1, 0, 0)
+                 else
+                      set_source_rgb(ctx, 0, 0, 0)
+                  end
+                 #=tmp=matrice[i,j]/10
+                 =##println("$i, $j, $(matrice[i,j])")
+                 #set_source_rgb(ctx, 0, 0, 0)
+                 fill(ctx)
+
+         end
+
+    end
+    sleep(1/60)
+end
 
 function neighbors(matrix::Array{Float64}, i, j)
 
@@ -10,19 +63,6 @@ function neighbors(matrix::Array{Float64}, i, j)
 
     return array
 
-end
-
-function stampaMatrice(matrice)
-
-    for i in 1:size(matrice)[1], j in 1:size(matrice)[2]
-
-        print("$(matrice[i,j]) ")
-        if (j == size(matrice)[2])
-            print("\n")
-        end
-
-    end
-    print("\n")
 end
 
 function sciddicaT_step(matrixHS::Array{Float64}, matrixD::Array{Float64}, pr)
@@ -88,26 +128,48 @@ function sciddicaT_step(matrixHS::Array{Float64}, matrixD::Array{Float64}, pr)
 
 end
 
-#dim = 5000
+function sciddicaT(matrixHS, matrixD, gen, canv, win)
+
+    @async begin
+        for u in 1:300
+            displays(matrixD, canv)
+            sciddicaT_step(matrixHS, matrixD, pr)
+            #tmp = matrixD + matrixHS
+            #println(u)
+
+
+        end
+    end
+    showall(win)
+
+end
+
+
+
+h = 610*2
+w = 496*2
+
+win = GtkWindow("sciddicaT", h, w)
+hbox = Box(:h)
+set_gtk_property!(hbox, :homogeneous, true)
+push!(win, hbox)
+canv = Canvas()
+push!(hbox, canv)
 
 matrixHS = readdlm("C:/Users/Daniele/Desktop/dem.txt")
 matrixD = readdlm("C:/Users/Daniele/Desktop/source.txt")
 matrixHS[1:end, 1:end] -= matrixD[1:end, 1:end]
-#println(matrixHS)
+
+#matrixHS = Array{Float64}(undef, dim, dim)
+#matrixD = Array{Float64}(undef, dim, dim)
+#matrixHS[1:end, 1:end] -= matrixD[1:end, 1:end]
 #=
-matrixHS = Array{Float64}(undef, 20, 20)
-matrixD = Array{Float64}(undef, 20, 20)
-
-fill!(matrixHS, 0)
+fill!(matrixHS, 1)
 fill!(matrixD, 0)
-matrixD[10,1]=50
-=#
-pr = 0.01 #fattore rallentamento
+matrixD[10,10]=100
+#println(matrixHS)=#
+pr = 1 #fattore rallentamento
 
-t = @elapsed for _ in 1:4000
-    sciddicaT_step(matrixHS, matrixD, pr)
-    tmp = matrixD + matrixHS
-    #stampaMatrice(matrixD)
-end
+sciddicaT(matrixHS, matrixD, 100, canv, win)
 
-println(t)
+#println(t)

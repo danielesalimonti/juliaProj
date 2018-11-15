@@ -1,9 +1,9 @@
 using Distributed, SharedArrays, Random
-@everywhere using SharedArrays
+
 if (nworkers() != 7)
     addprocs(7)
 end
-
+@everywhere using SharedArrays
 
 function assignRange(dim)
 
@@ -105,7 +105,7 @@ function gameOfLife(matrix::SharedArray, ranges::Array, gen::Int)
 end
 
 #inizio programma
-dim = 20000
+dim = 10000
 matrix = SharedArray{Bool}(dim, dim)
 #tmp = SharedArray{Bool}(dim, dim)
 
@@ -131,8 +131,6 @@ matrix[3,20] = true
 
 #stabilire range
 
-
-ranges = Array{Int64}(undef, nprocs()+1)
 ranges = assignRange(dim)
 #tmp[1:dim, 1:dim] = matrix[1:dim, 1:dim]
 #println(ranges)
@@ -140,7 +138,7 @@ ranges = assignRange(dim)
 
 t = @elapsed gameOfLife(matrix, ranges, 10)
 println(t)
-
+ranges = 0
 matrix = 0
 GC.gc()
 

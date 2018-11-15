@@ -1,11 +1,55 @@
 using Distributed
 using DelimitedFiles
+using Gtk, Gtk.ShortNames, Graphics
 
-if nworkers() != 8
-    addprocs(8)
+if nworkers() != 4
+    addprocs(4)
 end
 
 @everywhere using SharedArrays
+
+function displays(matrice::SharedArray, canv)
+
+    dimWin = size(matrice)[1]*2
+    @guarded draw(canv) do widget
+        ctx = getgc(canv)
+        w, h = width(canv), height(canv)
+
+        offsetW = w
+        offsetH = h
+        rectangle(ctx, 0, 0, dimWin, dimWin)
+        set_source_rgb(ctx, 0, 0, 0)
+        #set_source_rgb(ctx, rand(1)[1], rand(1)[1], rand(1)[1])
+        #set_source_rgb(ctx, 1, 1, 1)
+        fill(ctx)
+        #=
+        for i in 0:30:dimWin
+
+            rectangle(ctx, i, 0, 1, dimWin)
+            set_source_rgb(ctx, 1, 1, 1)
+            #set_source_rgb(ctx, 0, 0, 0)
+            fill(ctx)
+
+            rectangle(ctx, 0, i, dimWin, 1)
+            set_source_rgb(ctx, 1, 1, 1)
+            #set_source_rgb(ctx, 0, 0, 0)
+            fill(ctx)
+
+        end=#
+        for i in 1:size(matrice)[1], j in 1:size(matrice)[2]
+             if matrice[i,j]>0
+                 rectangle(ctx, ((j*dimWin)/size(matrice)[2])-2+1, ((i*dimWin)/size(matrice)[1])-2+1, 2, 2)
+                 #println("i : $i, j: $j")
+                 set_source_rgba(ctx, 1, 0, 0, 1#=matrice[i,j]=#)
+                 #set_source_rgb(ctx, 0, 0, 0)
+                 fill(ctx)
+
+             end
+         end
+
+    end
+    sleep(1/30)
+end
 
 function assignRange(dim)
 
@@ -35,19 +79,6 @@ end
 
     return array
 
-end
-
-function stampaMatrice(matrice)
-
-    for i in 1:size(matrice)[1], j in 1:size(matrice)[2]
-
-        print("$(matrice[i,j]) ")
-        if (j == size(matrice)[2])
-            print("\n")
-        end
-
-    end
-    print("\n")
 end
 
 @everywhere function sciddicaT_rule(matrixDlocal::Array{Float64}, matrixHSlocal::Array{Float64}, matrixDtmp::SharedArray, pr, left, right)
@@ -112,7 +143,7 @@ end
             end
         end #end let
     end #end for
-    #println(matrixDtmplocal)
+
     matrixDtmp[1:end, left:right] += matrixDtmplocal[1:end, 1:end]
     matrixDlocal = 0
     matrixDlocal = 0
@@ -120,11 +151,13 @@ end
 end
 
 function sciddicaT_step(matrixHS::SharedArray{Float64}, matrixD::SharedArray{Float64}, pr)
-
+    #println("qui")
     matrixDtmp = SharedArray{Float64}(size(matrixD)[1], size(matrixD)[2])
     matrixDtmp[1:end, 1:end] = matrixD[1:end, 1:end]
     @sync for i in 2:nworkers()+1
+
         @spawnat i begin
+
             row = size(matrixHS)[1]
             col = ranges[i-1]==0 || ranges[i]==size(matrixD)[2] ? (ranges[i]-ranges[i-1])+1 : (ranges[i]-ranges[i-1])+2
             matrixDlocal = Array{Float64}(undef, row, col)
@@ -149,8 +182,47 @@ function sciddicaT_step(matrixHS::SharedArray{Float64}, matrixD::SharedArray{Flo
     #println(matrixD)
 end
 
-#dim = 20
+@everywhere function stampaMatrice(matrice)
 
+    for i in 1:size(matrice)[1], j in 1:size(matrice)[2]
+
+
+        if (j == size(matrice)[2])
+            print("\n")
+        end
+
+    end
+    print("\n")
+end
+
+function sciddicaT(matrixHS, matrixD, gen, canv, win)
+
+    @async begin
+        for u in 1:3000
+
+            displays(matrixD, canv)
+            #println(u)
+            sciddicaT_step(matrixHS, matrixD, pr)
+            #tmp = matrixD + matrixHS
+            stampaMatrice(matrixD)
+        end
+    end
+    showall(win)
+
+end
+
+
+h = 610*2
+w = 496*2
+
+win = GtkWindow("sciddicaT", h, w)
+hbox = Box(:h)
+set_gtk_property!(hbox, :homogeneous, true)
+push!(win, hbox)
+canv = Canvas()
+push!(hbox, canv)
+
+#dim = 5000
 matrixHSread = readdlm("C:/Users/Daniele/Desktop/dem.txt")
 matrixDread = readdlm("C:/Users/Daniele/Desktop/source.txt")
 matrixHSread[1:end, 1:end] -= matrixDread[1:end, 1:end]
@@ -165,27 +237,27 @@ matrixHSread=0
 matrixDread=0
 
 #=
-matrixHS = SharedArray{Float64}(dim, dim)
-matrixD = SharedArray{Float64}(dim, dim)
-=#
-ranges = assignRange(size(matrixD)[2])
-@everywhere ranges
-#=
+matrixHS = SharedArray{Float64}(20,20)
+matrixD = SharedArray{Float64}(20,20)
 #println(ranges)
 fill!(matrixHS, 0)
 fill!(matrixD, 0)
-matrixD[10,1]=50
-=#
-pr = 0.01 #fattore rallentamento
-t = @elapsed for u in 1:4000
-    #println(u)
+matrixD[10,1]=50=#
+ranges = assignRange(size(matrixD)[2])
+#println(ranges)
+pr = 1 #fattore rallentamento
+
+sciddicaT(matrixHS, matrixD, 100, canv, win)
+
+#=
+t = @elapsed for u in 1:2000
     sciddicaT_step(matrixHS, matrixD, pr)
     tmp = matrixD + matrixHS
     #println(varinfo())
-    #stampaMatrice(matrixD)
+    println(u)
     #GC.gc()
-end
+end=#
 matrixHS = 0
 matrixD = 0
-println(t)
+#println(t)
 #println(varinfo())
